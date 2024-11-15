@@ -11,14 +11,20 @@ module.exports = {
         const guildId = message.guild.id;
         const guild = await GuildSetup.findOne({ guildId: guildId });
 
+        const lang = guild.language; // Definir el idioma aquí para que esté disponible en todo el bloque
+
+        // Verificar si el usuario tiene permisos para banear
         if (!message.member.permissions.has('BanMembers')) {
-            const lang = guild.language; // Obtener el idioma configurado
             return message.reply(messages[lang].noPermissions); // Mensaje de permisos
+        }
+
+        // Verificar si el bot tiene permisos para banear
+        if (!message.guild.members.me.permissions.has('BanMembers')) {
+            return message.reply(messages[lang].setupRequired); // Mensaje de que el bot no tiene permisos
         }
 
         const userToBan = message.mentions.users.first();
         if (!userToBan) {
-            const lang = guild.language; // Obtener el idioma configurado
             return message.reply(messages[lang].mentionUser); // Mensaje de mencionar usuario
         }
 
@@ -26,19 +32,16 @@ module.exports = {
 
         // Verificar si el miembro es un bot
         if (member.user.bot) {
-            const lang = guild.language; // Obtener el idioma configurado
             return message.reply(messages[lang].cannotBanBot); // Mensaje si es un bot
         }
 
         // Verificar si el miembro tiene un rango más alto que el bot
         if (member.roles.highest.position >= message.guild.members.me.roles.highest.position) {
-            const lang = guild.language; // Obtener el idioma configurado
             return message.reply(messages[lang].higherRank); // Mensaje si tiene un rango superior
         }
 
         // Verificar si el usuario a banear tiene permisos más altos que el ejecutor
-        if (!message.guild.members.cache.get(userToBan.id).permissions.has('BanMembers')) {
-            const lang = guild.language; // Obtener el idioma configurado
+        if (member.permissions.has('BanMembers')) {
             return message.reply(messages[lang].cannotBanHigherPerms); // Mensaje si el usuario tiene permisos más altos
         }
 
@@ -46,18 +49,17 @@ module.exports = {
             await member.ban({ reason: messages[lang].banReason }); // Mensaje de razón de baneo
 
             const banEmbed = new EmbedBuilder()
-                .setColor('#f3b0ff') // Rojo
+                .setColor('#f3b0ff') // Color
                 .setTitle(messages[lang].banTitle) // Título en el idioma seleccionado
                 .setDescription(`**${userToBan.tag}** ${messages[lang].banDescription}`) // Descripción en el idioma seleccionado
-                .addField(messages[lang].reasonTitle, messages[lang].banReason, true) // Campo de razón
+                .addFields({ name: messages[lang].reasonTitle, value: messages[lang].banReason, inline: true }) // Campo de razón
                 .setTimestamp()
                 .setFooter({ text: `${messages[lang].bannedBy} ${message.author.tag}`, iconURL: message.author.displayAvatarURL() });
 
             message.channel.send({ embeds: [banEmbed] });
         } catch (error) {
             console.error(error);
-            const lang = guild.language; // Obtener el idioma configurado
-            message.reply(messages[lang].banError); // Mensaje de error
+            return message.reply(messages[lang].banError); // Mensaje de error
         }
     },
-}
+};

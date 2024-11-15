@@ -13,7 +13,7 @@ const messages = {
         userToBan: 'El usuario a banear', // Mensaje para la opción de usuario
         descu: 'Banear a una persona.',
         cannotBanBot: 'No puedes banear a un bot.',
-        higherRank: 'No puedes banear a un miembro con rango superior al mío.',
+        higherRank: 'No puedes banear a un miembro con rango superior al mío.', // Aquí agregamos higherRank
         cannotBanHigherPerms: 'No puedes banear a un miembro con permisos superiores a los tuyos.'
     },
     en: {
@@ -30,7 +30,7 @@ const messages = {
         userToBan: 'The user to ban', // Mensaje para la opción de usuario
         descu: 'Ban a person.',
         cannotBanBot: 'You cannot ban a bot.',
-        higherRank: 'You cannot ban a member with a higher rank than mine.',
+        higherRank: 'You cannot ban a member with a higher rank than mine.', // Aquí agregamos higherRank
         cannotBanHigherPerms: 'You cannot ban a member with higher permissions than yours.'
     },
     fr: {
@@ -47,7 +47,7 @@ const messages = {
         userToBan: 'L\'utilisateur à bannir', // Mensaje para la opción de usuario
         descu: 'Bannir une personne.',
         cannotBanBot: 'Vous ne pouvez pas bannir un bot.',
-        higherRank: 'Vous ne pouvez pas bannir un membre ayant un rang plus élevé que le mien.',
+        higherRank: 'Vous ne pouvez pas bannir un membre ayant un rang plus élevé que le mien.', // Aquí agregamos higherRank
         cannotBanHigherPerms: 'Vous ne pouvez pas bannir un membre ayant des permissions supérieures aux vôtres.'
     }
 };
