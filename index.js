@@ -64,3 +64,4 @@ client.login(config.token)
     .then(() => console.log('Bot conectado con éxito.'))
     .catch(err => console.error('Error al conectar el bot:', err));
 
+//cambie esto uwu
