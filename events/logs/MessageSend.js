@@ -3,7 +3,7 @@ const { EmbedBuilder } = require('discord.js');
 const LogSchema = require('../../Schemas/LogSchema');
 
 module.exports = {
-    name: 'messageCreate', // Cambiamos a messageCreate para capturar mensajes enviados
+    name: 'messageCreate', 
     once: false,
     async execute(client, message) {
         try {

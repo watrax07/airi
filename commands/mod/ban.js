@@ -23,27 +23,41 @@ module.exports = {
         }
 
         const member = message.guild.members.cache.get(userToBan.id);
-        if (member) {
-            try {
-                await member.ban({ reason: messages[lang].banReason }); // Mensaje de razón de baneo
 
-                const banEmbed = new EmbedBuilder()
-                    .setColor('#f3b0ff') // Rojo
-                    .setTitle(messages[lang].banTitle) // Título en el idioma seleccionado
-                    .setDescription(`**${userToBan.tag}** ${messages[lang].banDescription}`) // Descripción en el idioma seleccionado
-                    .addField(messages[lang].reasonTitle, messages[lang].banReason, true) // Campo de razón
-                    .setTimestamp()
-                    .setFooter({ text: `${messages[lang].bannedBy} ${message.author.tag}`, iconURL: message.author.displayAvatarURL() });
-
-                message.channel.send({ embeds: [banEmbed] });
-            } catch (error) {
-                console.error(error);
-                const lang = guild.language; // Obtener el idioma configurado
-                message.reply(messages[lang].banError); // Mensaje de error
-            }
-        } else {
+        // Verificar si el miembro es un bot
+        if (member.user.bot) {
             const lang = guild.language; // Obtener el idioma configurado
-            message.reply(messages[lang].memberNotFound); // Mensaje de miembro no encontrado
+            return message.reply(messages[lang].cannotBanBot); // Mensaje si es un bot
+        }
+
+        // Verificar si el miembro tiene un rango más alto que el bot
+        if (member.roles.highest.position >= message.guild.members.me.roles.highest.position) {
+            const lang = guild.language; // Obtener el idioma configurado
+            return message.reply(messages[lang].higherRank); // Mensaje si tiene un rango superior
+        }
+
+        // Verificar si el usuario a banear tiene permisos más altos que el ejecutor
+        if (!message.guild.members.cache.get(userToBan.id).permissions.has('BanMembers')) {
+            const lang = guild.language; // Obtener el idioma configurado
+            return message.reply(messages[lang].cannotBanHigherPerms); // Mensaje si el usuario tiene permisos más altos
+        }
+
+        try {
+            await member.ban({ reason: messages[lang].banReason }); // Mensaje de razón de baneo
+
+            const banEmbed = new EmbedBuilder()
+                .setColor('#f3b0ff') // Rojo
+                .setTitle(messages[lang].banTitle) // Título en el idioma seleccionado
+                .setDescription(`**${userToBan.tag}** ${messages[lang].banDescription}`) // Descripción en el idioma seleccionado
+                .addField(messages[lang].reasonTitle, messages[lang].banReason, true) // Campo de razón
+                .setTimestamp()
+                .setFooter({ text: `${messages[lang].bannedBy} ${message.author.tag}`, iconURL: message.author.displayAvatarURL() });
+
+            message.channel.send({ embeds: [banEmbed] });
+        } catch (error) {
+            console.error(error);
+            const lang = guild.language; // Obtener el idioma configurado
+            message.reply(messages[lang].banError); // Mensaje de error
         }
     },
 }

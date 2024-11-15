@@ -2,9 +2,9 @@ const { EmbedBuilder } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
 
 module.exports = {
-    name: 'guildMemberAdd',
+    name: 'guildMemberRemove',
     async execute(client, member) {
-        console.log('Evento guildMemberAdd activado');
+        console.log('Evento guildMemberRemove activado');
 
         // Verificamos si el miembro pertenece a un servidor
         if (!member.guild) {
@@ -17,20 +17,20 @@ module.exports = {
             return;
         }
 
-        // Comprobamos si los logs de ingreso de miembros están habilitados y si se ha configurado un canal para estos logs
-        if (logSettings.memberJoinEnabled && logSettings.memberJoinChannelId) {
-            const logChannel = member.guild.channels.cache.get(logSettings.memberJoinChannelId);
+        // Comprobamos si los logs de salida de miembros están habilitados y si se ha configurado un canal para estos logs
+        if (logSettings.memberLeaveEnabled && logSettings.memberLeaveChannelId) {
+            const logChannel = member.guild.channels.cache.get(logSettings.memberLeaveChannelId);
             if (!logChannel) {
                 return;
             }
 
-            // Creamos un embed para mostrar el detalle del nuevo miembro que ingresó
+            // Creamos un embed para mostrar el detalle del miembro que salió
             const embed = new EmbedBuilder()
-                .setColor('#00FF00') // Verde, para indicar que el miembro se ha unido correctamente
-                .setTitle('🟢 Nuevo Miembro')
-                .setDescription(`¡Bienvenido **${member.user.tag}** al servidor!`)
+                .setColor('#FF0000') // Rojo, para indicar que el miembro se ha ido
+                .setTitle('🔴 Miembro Salió')
+                .setDescription(`**${member.user.tag}** ha abandonado el servidor.`)
                 .addFields(
-                    { name: 'Miembro desde', value: new Date().toLocaleString(), inline: true },
+                    { name: 'Miembro desde', value: new Date(member.joinedTimestamp).toLocaleString(), inline: true },
                     { name: 'Miembros Totales', value: `${member.guild.memberCount}`, inline: true }
                 )
                 .setTimestamp();

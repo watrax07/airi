@@ -11,7 +11,10 @@ const messages = {
         bannedBy: 'Baneado por',
         setupRequired: 'Debes usar `!setup` para configurar el bot en este servidor.',
         userToBan: 'El usuario a banear', // Mensaje para la opción de usuario
-        descu: 'Banear a una persona.'
+        descu: 'Banear a una persona.',
+        cannotBanBot: 'No puedes banear a un bot.',
+        higherRank: 'No puedes banear a un miembro con rango superior al mío.',
+        cannotBanHigherPerms: 'No puedes banear a un miembro con permisos superiores a los tuyos.'
     },
     en: {
         noPermissions: 'You do not have permission to ban members.',
@@ -25,7 +28,10 @@ const messages = {
         bannedBy: 'Banned by',
         setupRequired: 'You must use `!setup` to configure the bot on this server.',
         userToBan: 'The user to ban', // Mensaje para la opción de usuario
-        descu: 'Ban a person.'
+        descu: 'Ban a person.',
+        cannotBanBot: 'You cannot ban a bot.',
+        higherRank: 'You cannot ban a member with a higher rank than mine.',
+        cannotBanHigherPerms: 'You cannot ban a member with higher permissions than yours.'
     },
     fr: {
         noPermissions: 'Vous n\'avez pas la permission de bannir des membres.',
@@ -39,7 +45,10 @@ const messages = {
         bannedBy: 'Banni par',
         setupRequired: 'Vous devez utiliser `!setup` pour configurer le bot sur ce serveur.',
         userToBan: 'L\'utilisateur à bannir', // Mensaje para la opción de usuario
-        descu: 'Bannir une personne.'
+        descu: 'Bannir une personne.',
+        cannotBanBot: 'Vous ne pouvez pas bannir un bot.',
+        higherRank: 'Vous ne pouvez pas bannir un membre ayant un rang plus élevé que le mien.',
+        cannotBanHigherPerms: 'Vous ne pouvez pas bannir un membre ayant des permissions supérieures aux vôtres.'
     }
 };
 
