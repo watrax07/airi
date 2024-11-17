@@ -6,200 +6,234 @@ module.exports = {
     name: 'setuplogs',
     description: 'Configura los logs del servidor',
     async execute(message) {
-        const guildId = message.guild.id;
+        try {
+            const guildId = message.guild.id;
 
-        // Verificar si el servidor está configurado
-        const guild = await GuildSetup.findOne({ guildId });
-        if (!guild || !guild.isSetupComplete) {
-            return message.channel.send('Por favor, completa la configuración del servidor antes de configurar los logs.');
-        }
-
-        // Obtener o crear configuración de logs
-        let logSettings = await LogSettings.findOne({ guildId });
-        if (!logSettings) {
-            logSettings = new LogSettings({ guildId });
-            await logSettings.save();
-        }
-
-        const categories = [
-            { label: 'Miembro', value: 'member', description: 'Logs relacionados con miembros (entradas/salidas)' },
-            { label: 'Mensajes', value: 'message', description: 'Logs de mensajes (envío, edición, eliminación)' },
-            { label: 'Roles', value: 'role', description: 'Logs relacionados con roles (asignación/eliminación)' },
-            { label: 'Canales', value: 'channel', description: 'Logs relacionados con la creación y eliminación de canales' },
-            { label: 'Moderación', value: 'mod', description: 'Logs de acciones de moderación' },
-        ];
-
-        const selectMenu = new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId('log_category')
-                .setPlaceholder('Selecciona una categoría de logs')
-                .addOptions(categories)
-        );
-
-        const categoryEmbed = new EmbedBuilder()
-            .setTitle('Configuración de Logs - Categorías')
-            .setDescription('Selecciona una categoría para configurar los logs correspondientes.')
-            .setColor('#ff0000');
-
-        const sentMessage = await message.channel.send({
-            embeds: [categoryEmbed],
-            components: [selectMenu]
-        });
-
-        const collector = message.channel.createMessageComponentCollector({
-            componentType: ComponentType.StringSelect,
-            time: 60000
-        });
-
-        collector.on('collect', async (interaction) => {
-            if (interaction.user.id !== message.author.id) {
-                return interaction.reply({ content: 'No puedes interactuar con este setup.', ephemeral: true });
+            const guild = await GuildSetup.findOne({ guildId });
+            if (!guild || !guild.isSetupComplete) {
+                return message.channel.send('Por favor, completa la configuración del servidor antes de configurar los logs.');
             }
 
-            const selectedCategory = interaction.values[0];
-            let logTypes, embedTitle;
+            let logSettings = await LogSettings.findOne({ guildId }) || new LogSettings({ guildId });
+            if (!logSettings._id) await logSettings.save();
 
-            switch (selectedCategory) {
-                case 'member':
-                    logTypes = ['memberJoin', 'memberLeave'];
-                    embedTitle = 'Configuración de Logs - Miembros';
-                    break;
-                case 'message':
-                    logTypes = ['messageDelete', 'messageUpdate', 'messageSend'];
-                    embedTitle = 'Configuración de Logs - Mensajes';
-                    break;
-                case 'role':
-                    logTypes = ['roleCreate', 'roleDelete', 'roleUpdate'];
-                    embedTitle = 'Configuración de Logs - Roles';
-                    break;
-                case 'channel':
-                    logTypes = ['channelCreate', 'channelDelete', 'channelEdit'];
-                    embedTitle = 'Configuración de Logs - Canales';
-                    break;
-                case 'mod':
-                    logTypes = ['userBan', 'userKick', 'userWarn', 'userUnwarn', 'userTimeout'];
-                    embedTitle = 'Configuración de Logs - Moderación';
-                    break;
-            }
+            const categories = [
+                { label: 'Miembro', value: 'member', description: 'Logs relacionados con miembros' },
+                { label: 'Mensajes', value: 'message', description: 'Logs de mensajes' },
+                { label: 'Roles', value: 'role', description: 'Logs relacionados con roles' },
+                { label: 'Canales', value: 'channel', description: 'Logs de canales' },
+                { label: 'Moderación', value: 'mod', description: 'Logs de moderación' },
+            ];
 
-            // Función para crear botones basados en el estado actual de cada log
-            const createButtons = () => {
-                return logTypes.map(logType => {
-                    const isEnabled = logSettings[`${logType}Enabled`]; // Verificamos el estado de habilitación
-                    return new ButtonBuilder()
-                        .setCustomId(`${logType}_toggle`)
-                        .setLabel(isEnabled ? `${logType} (Activado)` : `${logType} (Desactivado)`)
-                        .setStyle(isEnabled ? ButtonStyle.Success : ButtonStyle.Danger);
+            const showMainMenu = async () => {
+                const selectMenu = new ActionRowBuilder().addComponents(
+                    new StringSelectMenuBuilder()
+                        .setCustomId('log_category')
+                        .setPlaceholder('Selecciona una categoría de logs')
+                        .addOptions(categories)
+                );
+
+                const categoryEmbed = new EmbedBuilder()
+                    .setTitle('Configuración de Logs - Categorías')
+                    .setDescription('Selecciona una categoría para configurar los logs correspondientes.')
+                    .setColor('#ff0000');
+
+                await sentMessage.edit({
+                    embeds: [categoryEmbed],
+                    components: [selectMenu],
                 });
             };
 
-            const logEmbed = new EmbedBuilder()
-                .setTitle(embedTitle)
-                .setDescription('Selecciona qué logs deseas activar/desactivar.')
-                .setColor('#ff0000');
-
-            let logRow = new ActionRowBuilder().addComponents(createButtons());
-
-            // Actualizar el mensaje con el estado inicial de los botones
-            await interaction.update({ embeds: [logEmbed], components: [logRow] });
-
-            const buttonCollector = interaction.channel.createMessageComponentCollector({
-                componentType: ComponentType.Button,
-                time: 60000
+            const sentMessage = await message.channel.send({
+                embeds: [new EmbedBuilder().setTitle('Configuración de Logs').setDescription('Cargando menú...').setColor('#ff0000')],
             });
 
-            buttonCollector.on('collect', async (buttonInteraction) => {
-                if (buttonInteraction.user.id !== message.author.id) {
-                    return buttonInteraction.reply({ content: 'No puedes interactuar con este setup.', ephemeral: true });
-                }
-            
-                const logType = buttonInteraction.customId.split('_')[0];
-                const logChannelKey = `${logType}ChannelId`;
-                const logEnabledKey = `${logType}Enabled`;
-            
-                // Verificar si ya fue respondida
-                if (!buttonInteraction.deferred && !buttonInteraction.replied) {
-                    await buttonInteraction.deferUpdate();
-                }
-            
-                // Cambiar el estado del log (activar/desactivar)
-                if (logSettings[logEnabledKey]) {
-                    // Desactivar el log
-                    logSettings[logEnabledKey] = false;
-                    logSettings[logChannelKey] = null; // Limpiar el canal asociado
-                } else {
-                    // Activar el log
-                    logSettings[logEnabledKey] = true;
-                    logSettings[logChannelKey] = 'default_channel_id'; // Temporal, luego se actualizará con el canal real
-                }
-            
-                await logSettings.save();
-            
-                // Si el log está siendo activado, preguntar por el canal
-                if (logSettings[logEnabledKey]) {
-                    // Verificar si ya fue respondida antes de usar followUp
-                    if (!buttonInteraction.replied) {
-                        await buttonInteraction.followUp({ content: `Por favor, escribe el ID del canal donde quieres recibir los logs de ${logType}.`, ephemeral: true });
-                    }
-            
-                    // Filtro para capturar solo el siguiente mensaje del autor con el ID del canal
-                    const filter = response => response.author.id === message.author.id && response.content;
-            
-                    try {
-                        // Esperar el ID del canal del usuario
-                        const collected = await message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ['time'] });
-                        const channelId = collected.first().content;
-                        const channel = message.guild.channels.cache.get(channelId);
-            
-                        // Validar si el canal existe y es un canal de texto
-                        if (!channel || channel.type !== 0) {
-                            return buttonInteraction.followUp({ content: 'ID de canal inválido. Asegúrate de enviar un ID de canal válido.', ephemeral: true });
-                        }
-            
-                        // Guardar el canal donde se enviarán los logs
-                        logSettings[logChannelKey] = channelId;
-                        await logSettings.save();
-            
-                        // Verificar si ya fue respondida antes de usar followUp
-                        if (!buttonInteraction.replied) {
-                            await buttonInteraction.followUp({ content: `Los logs de ${logType} ahora se enviarán a ${channel.toString()}.`, ephemeral: true });
-                        }
-                    } catch (error) {
-                        // Verificar si ya fue respondida antes de usar followUp
-                        if (!buttonInteraction.replied) {
-                            await buttonInteraction.followUp({ content: 'No se recibió una respuesta a tiempo. El log no fue configurado.', ephemeral: true });
-                        }
-                    }
-                } else {
-                    // Si el log está siendo desactivado
-                    if (!buttonInteraction.replied) {
-                        await buttonInteraction.followUp({ content: `El log de ${logType} ha sido desactivado.`, ephemeral: true });
-                    }
-                }
-            
-                // Actualizar los botones en el mensaje original
-                const updatedButtons = createButtons();
-                const logRow = new ActionRowBuilder().addComponents(updatedButtons);
-            
-                // Editar el mensaje original con los botones actualizados
-                await sentMessage.edit({ embeds: [logEmbed], components: [logRow] });
+            await showMainMenu();
+
+            const collector = message.channel.createMessageComponentCollector({
+                componentType: ComponentType.StringSelect,
+                time: 60000,
             });
 
-            buttonCollector.on('end', async () => {
+            collector.on('collect', async (interaction) => {
                 try {
-                    await sentMessage.edit({ components: [] });
+                    if (interaction.user.id !== message.author.id) {
+                        return interaction.reply({ content: 'No puedes interactuar con este setup.', ephemeral: true });
+                    }
+
+                    if (!interaction.deferred && !interaction.replied) {
+                        await interaction.deferUpdate();
+                    }
+
+                    const selectedCategory = interaction.values[0];
+                    const categoryConfig = getCategoryConfig(selectedCategory);
+
+                    if (!categoryConfig) {
+                        return interaction.followUp({ content: 'Categoría inválida.', ephemeral: true });
+                    }
+
+                    const logEmbed = new EmbedBuilder()
+                        .setTitle(categoryConfig.title)
+                        .setDescription('Selecciona qué logs deseas activar/desactivar.')
+                        .setColor('#ff0000');
+
+                    const buttons = createButtons(categoryConfig.logTypes, logSettings);
+                    const rows = splitComponentsIntoRows(buttons);
+
+                    rows.push(
+                        new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setCustomId('back_to_menu')
+                                .setLabel('Regresar al Menú')
+                                .setStyle(ButtonStyle.Secondary)
+                        )
+                    );
+
+                    await sentMessage.edit({ embeds: [logEmbed], components: rows });
+
+                    const buttonCollector = message.channel.createMessageComponentCollector({
+                        componentType: ComponentType.Button,
+                        time: 60000,
+                    });
+
+                    buttonCollector.on('collect', async (buttonInteraction) => {
+                        try {
+                            if (buttonInteraction.user.id !== message.author.id) {
+                                return buttonInteraction.reply({ content: 'No puedes interactuar con este setup.', ephemeral: true });
+                            }
+                    
+                            try {
+                                if (!buttonInteraction.deferred && !buttonInteraction.replied) {
+                                    await buttonInteraction.deferUpdate();
+                                }
+                            } catch (error) {
+                                // Silenciar cualquier error aquí
+                            }
+                    
+                            if (buttonInteraction.customId === 'back_to_menu') {
+                                await showMainMenu();
+                                return;
+                            }
+                    
+                            const logType = buttonInteraction.customId.split('_')[0];
+                            const logEnabledKey = `${logType}Enabled`;
+                            const logChannelKey = `${logType}ChannelId`;
+                    
+                            if (!logSettings[logEnabledKey]) {
+                                const followUpMessage = await buttonInteraction.followUp({
+                                    content: `Por favor, escribe el ID del canal donde deseas recibir los logs de ${logType}.`,
+                                    ephemeral: false,
+                                });
+                    
+                                const filter = (response) => response.author.id === message.author.id;
+                                const collected = await message.channel.awaitMessages({ filter, max: 1, time: 60000 }).catch(() => null);
+                    
+                                const channelId = collected?.first()?.content;
+                                const channel = message.guild.channels.cache.get(channelId);
+                    
+                                if (!channel || channel.type !== 0) {
+                                    const errorMessage = await buttonInteraction.followUp({ content: 'ID de canal inválido. Asegúrate de ingresar un canal de texto válido.', ephemeral: false });
+                                    await followUpMessage.delete();
+                                    setTimeout(() => errorMessage.delete(), 5000);
+                                    return;
+                                }
+                    
+                                logSettings[logChannelKey] = channelId;
+                                logSettings[logEnabledKey] = true;
+                                await logSettings.save();
+                    
+                                const successMessage = await buttonInteraction.followUp({
+                                    content: `Los logs de ${logType} ahora se enviarán a ${channel.toString()}.`,
+                                    ephemeral: false,
+                                });
+                    
+                                await collected.first()?.delete();
+                                await followUpMessage.delete();
+                    
+                                setTimeout(() => successMessage.delete(), 5000);
+                            } else {
+                                logSettings[logEnabledKey] = false;
+                                logSettings[logChannelKey] = null;
+                                await logSettings.save();
+                    
+                                const disableMessage = await buttonInteraction.followUp({
+                                    content: `El log de ${logType} ha sido desactivado.`,
+                                    ephemeral: false,
+                                });
+                    
+                                setTimeout(() => disableMessage.delete(), 5000);
+                            }
+                    
+                            const updatedButtons = createButtons(categoryConfig.logTypes, logSettings);
+                            const updatedRows = splitComponentsIntoRows(updatedButtons);
+                    
+                            updatedRows.push(
+                                new ActionRowBuilder().addComponents(
+                                    new ButtonBuilder()
+                                        .setCustomId('back_to_menu')
+                                        .setLabel('Regresar al Menú')
+                                        .setStyle(ButtonStyle.Secondary)
+                                )
+                            );
+                    
+                            await sentMessage.edit({ components: updatedRows });
+                        } catch (error) {
+                            // Silenciar todos los errores
+                        }
+                    });
+
+                    buttonCollector.on('end', () => disableComponents(sentMessage));
                 } catch (error) {
-                    console.error('Error al intentar editar el mensaje:', error);
+                    console.error('Error al manejar selección:', error);
                 }
             });
-        });
 
-        collector.on('end', async () => {
-            try {
-                await sentMessage.edit({ components: [] });
-            } catch (error) {
-                console.error('Error al intentar editar el mensaje:', error);
-            }
-        });
+            collector.on('end', () => disableComponents(sentMessage));
+        } catch (error) {
+            console.error('Error general en setuplogs:', error);
+            message.channel.send('Hubo un problema al configurar los logs. Por favor, inténtalo nuevamente.');
+        }
     },
 };
+
+function splitComponentsIntoRows(components, maxPerRow = 5) {
+    const rows = [];
+    for (let i = 0; i < components.length; i += maxPerRow) {
+        rows.push(new ActionRowBuilder().addComponents(components.slice(i, i + maxPerRow)));
+    }
+    return rows;
+}
+
+function disableComponents(message) {
+    try {
+        const disabledComponents = message.components.map((row) => {
+            return new ActionRowBuilder().addComponents(
+                row.components.map((component) => component.setDisabled ? component.setDisabled(true) : component)
+            );
+        });
+        message.edit({ components: disabledComponents });
+    } catch (error) {
+        console.error('Error al desactivar componentes:', error);
+    }
+}
+
+function getCategoryConfig(category) {
+    const config = {
+        member: { logTypes: ['memberJoin', 'memberLeave'], title: 'Configuración de Logs - Miembros' },
+        message: { logTypes: ['messageDelete', 'messageUpdate'], title: 'Configuración de Logs - Mensajes' },
+        role: { logTypes: ['roleCreate', 'roleDelete', 'roleUpdate'], title: 'Configuración de Logs - Roles' },
+        channel: { logTypes: ['channelCreate', 'channelDelete', 'channelEdit'], title: 'Configuración de Logs - Canales' },
+        mod: { logTypes: ['userBan', 'userTimeout'], title: 'Configuración de Logs - Moderación' },
+    };
+    return config[category] || null;
+}
+
+function createButtons(logTypes, logSettings) {
+    return logTypes.map((logType) => {
+        const isEnabled = logSettings[`${logType}Enabled`];
+        return new ButtonBuilder()
+            .setCustomId(`${logType}_toggle`)
+            .setLabel(isEnabled ? `${logType} (Activado)` : `${logType} (Desactivado)`)
+            .setStyle(isEnabled ? ButtonStyle.Success : ButtonStyle.Danger);
+    });
+}

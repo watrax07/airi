@@ -4,7 +4,6 @@ const LogSettings = require('../../Schemas/LogSchema');
 module.exports = {
     name: 'guildMemberRemove',
     async execute(client, member) {
-        console.log('Evento guildMemberRemove activado');
 
         // Verificamos si el miembro pertenece a un servidor
         if (!member.guild) {

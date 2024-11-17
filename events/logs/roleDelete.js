@@ -3,7 +3,6 @@ const LogSettings = require('../../Schemas/LogSchema');
 module.exports = {
     name: 'roleDelete',
     async execute(client, role) {
-        console.log('Evento roleDelete activado');
 
         if (!role.guild) {
             return;

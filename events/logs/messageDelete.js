@@ -3,7 +3,6 @@ const LogSettings = require('../../Schemas/LogSchema');
 module.exports = {
     name: 'messageDelete',
     async execute(client, message) {
-        console.log('Evento messageDelete activado');
         
         if (!message.guild) {
             return;

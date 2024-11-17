@@ -3,7 +3,6 @@ const LogSettings = require('../../Schemas/LogSchema');
 module.exports = {
     name: 'roleCreate',
     async execute(client, role) {
-        console.log('Evento roleCreate activado');
 
         if (!role.guild) {
             return;

@@ -1,6 +1,7 @@
 const GuildSetup = require('../../Schemas/guildSetup');
 const Warning = require('../../Schemas/warning');
 const WarnAction = require('../../Schemas/warnAction');
+const LogSettings = require('../../Schemas/LogSchema');
 const { EmbedBuilder } = require('discord.js');
 const ms = require('ms'); // Librería para convertir tiempos
 const messages = require('./messages/warn');
@@ -95,6 +96,24 @@ module.exports = {
                     `${messages[lang].warnSuccess.replace('{user}', userToWarn.user.tag)}\n\`\`\`${reason.trim()}\`\`\``)
                 .setTimestamp();
             message.channel.send({ embeds: [embed] });
+            const logSettings = await LogSettings.findOne({ guildId: guildId });
+            if (logSettings?.userWarnEnabled && logSettings.userWarnChannelId) {
+                const logChannel = message.guild.channels.cache.get(logSettings.userWarnChannelId);
+                if (logChannel) {
+                    const logEmbed = new EmbedBuilder()
+                        .setColor('#ff9900')
+                        .setTitle('⚠️ Advertencia Emitida')
+                        .setDescription(`El usuario **${userToWarn.user.tag}** ha sido advertido.`)
+                        .addFields(
+                            { name: 'Razón', value: reason, inline: true },
+                            { name: 'Moderador', value: message.author.tag, inline: true },
+                            { name: 'ID del Usuario', value: userToWarn.id, inline: true }
+                        )
+                        .setTimestamp();
+
+                    logChannel.send({ embeds: [logEmbed] });
+                }
+            }
 
             // Enviar mensaje directo al usuario advertido
             const dmEmbed = new EmbedBuilder()

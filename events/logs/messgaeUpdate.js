@@ -1,11 +1,27 @@
 const { EmbedBuilder } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
+
 module.exports = {
     name: 'messageUpdate',
     async execute(client, oldMessage, newMessage) {
-        console.log('Evento messageUpdate activado');
 
+        // Validar si el mensaje pertenece a un servidor
         if (!newMessage.guild) {
+            return;
+        }
+
+        // Ignorar mensajes de bots
+        if (newMessage.author.bot) {
+            return;
+        }
+
+        // Ignorar mensajes que no contengan contenido visible
+        if (!oldMessage.content && !newMessage.content) {
+            return;
+        }
+
+        // Ignorar mensajes con solo embeds, archivos o imágenes
+        if (newMessage.attachments.size > 0 || newMessage.embeds.length > 0) {
             return;
         }
 
@@ -14,6 +30,7 @@ module.exports = {
             return;
         }
 
+        // Validar si el logging está habilitado y el canal está configurado
         if (logSettings.messageUpdateEnabled && logSettings.messageUpdateChannelId) {
             const logChannel = newMessage.guild.channels.cache.get(logSettings.messageUpdateChannelId);
             if (!logChannel) {
@@ -25,8 +42,8 @@ module.exports = {
                 .setTitle('✏️ Mensaje Editado')
                 .setDescription(`Un mensaje de **${newMessage.author.tag}** fue editado en **${newMessage.channel.name}**.`)
                 .addFields(
-                    { name: 'Antes', value: oldMessage.content || 'Contenido no visible' },
-                    { name: 'Ahora', value: newMessage.content || 'Contenido no visible' },
+                    { name: 'Ahora', value: `\`\`\`${newMessage.content}\`\`\`` || `\`\`\`Contenido no visible\`\`\`` },
+                    { name: 'Antes', value: `\`\`\`${oldMessage.content}\`\`\`` || `\`\`\`Contenido no visible\`\`\`` },
                     { name: 'Autor', value: `${newMessage.author.tag}`, inline: true },
                     { name: 'Canal', value: `${newMessage.channel.name}`, inline: true }
                 )
