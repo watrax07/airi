@@ -1,21 +1,34 @@
-// messages/untimeout.js
-module.exports = {
+const messages = {
     es: {
-        setupRequired: 'You must use `!setup` to configure the bot on this server.',
-        mentionUser: '¡Por favor menciona a un usuario del que quieras eliminar el timeout!',
-        timeoutRemoved: '¡{user} ha sido sacado del timeout!',
+        setupRequired: 'Debes usar `!setup` para configurar el bot en este servidor.',
+        noPermissions: 'No tienes permisos para eliminar un timeout.',
+        botError: 'No tengo suficientes permisos para eliminar un timeout.',
+        mentionUser: 'Debes mencionar a un usuario o proporcionar su ID.',
+        noActiveTimeout: '{user} no tiene un timeout activo.',
+        timeoutRemoved: 'El timeout de {user} ha sido eliminado correctamente.',
         timeoutError: 'Hubo un error al intentar eliminar el timeout.',
+        timeoutRemovedReason: 'Timeout eliminado por {user}.'
     },
     en: {
-        setupRequired: 'The server setup is not complete. Please complete the setup first.',
-        mentionUser: 'Please mention a user you want to remove the timeout from!',
-        timeoutRemoved: '{user} has been removed from the timeout!',
+        setupRequired: 'You must use `!setup` to configure the bot on this server.',
+        noPermissions: 'You do not have permission to remove a timeout.',
+        botError: 'I do not have enough permissions to remove a timeout.',
+        mentionUser: 'You must mention a user or provide their ID.',
+        noActiveTimeout: '{user} does not have an active timeout.',
+        timeoutRemoved: 'The timeout for {user} has been successfully removed.',
         timeoutError: 'There was an error trying to remove the timeout.',
+        timeoutRemovedReason: 'Timeout removed by {user}.'
     },
     fr: {
-        setupRequired: 'La configuration du serveur n\'est pas complète. Veuillez d\'abord terminer la configuration.',
-        mentionUser: 'Veuillez mentionner un utilisateur dont vous souhaitez supprimer le timeout!',
-        timeoutRemoved: '{user} a été retiré du timeout!',
-        timeoutError: 'Une erreur s\'est produite lors de la suppression du timeout.',
-    },
+        setupRequired: 'Vous devez utiliser `!setup` pour configurer le bot sur ce serveur.',
+        noPermissions: 'Vous n\'avez pas la permission de supprimer un timeout.',
+        botError: 'Je n\'ai pas assez de permissions pour supprimer un timeout.',
+        mentionUser: 'Vous devez mentionner un utilisateur ou fournir son ID.',
+        noActiveTimeout: '{user} n\'a pas de timeout actif.',
+        timeoutRemoved: 'Le timeout de {user} a été supprimé avec succès.',
+        timeoutError: 'Une erreur s\'est produite lors de la tentative de suppression du timeout.',
+        timeoutRemovedReason: 'Timeout supprimé par {user}.'
+    }
 };
+
+module.exports = messages;

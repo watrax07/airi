@@ -1,5 +1,5 @@
-// commands/admin/timeout.js
 const GuildSetup = require('../../Schemas/guildSetup');
+const { EmbedBuilder } = require('discord.js');
 const messages = require('./messages/timeout'); // Asegúrate de importar el archivo de mensajes
 
 module.exports = {
@@ -14,27 +14,77 @@ module.exports = {
         const guild = await GuildSetup.findOne({ guildId: guildId });
 
         if (!guild || !guild.isSetupComplete) {
-            const lang = guild ? guild.language : 'es'; // Usar español por defecto si no hay configuración
-            return message.channel.send(messages[lang].setupRequired); // Mensaje de configuración requerido
+            const lang = guild ? guild.language : 'en';
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].setupRequired}**`);
+            return message.channel.send({ embeds: [embed] });
         }
 
-        const user = message.mentions.members.first();
-        if (!user) {
-            const lang = guild.language; // Obtener el idioma configurado
-            return message.reply(messages[lang].mentionUser); // Mensaje de mencionar usuario
+        const lang = guild.language;
+
+        // Verificar si el usuario tiene permisos para aplicar timeout
+        if (!message.member.permissions.has('ModerateMembers')) {
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].noPermissions}**`);
+            return message.channel.send({ embeds: [embed] });
+        }
+
+        // Verificar si el bot tiene permisos para aplicar timeout
+        if (!message.guild.members.me.permissions.has('ModerateMembers')) {
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].botError}**`);
+            return message.channel.send({ embeds: [embed] });
+        }
+
+        const userToTimeout = message.mentions.members.first() || await message.guild.members.fetch(args[0]).catch(() => null);
+
+        if (!userToTimeout || !userToTimeout.user) {
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].mentionUser}**`);
+            return message.channel.send({ embeds: [embed] });
+        }
+
+        // Verificar si el usuario es un bot
+        if (userToTimeout.user.bot) {
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].cannotTimeoutBot}**`);
+            return message.channel.send({ embeds: [embed] });
+        }
+
+        // Verificar si el miembro tiene un rango más alto que el bot
+        if (userToTimeout.roles.highest.position >= message.guild.members.me.roles.highest.position) {
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].higherRank}**`);
+            return message.channel.send({ embeds: [embed] });
+        }
+
+        // Verificar si el usuario a timeout tiene permisos más altos que el ejecutor
+        if (userToTimeout.permissions.has('ModerateMembers')) {
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].cannotTimeoutHigherPerms}**`);
+            return message.channel.send({ embeds: [embed] });
         }
 
         // Variables para almacenar el tiempo total en milisegundos
         let totalMilliseconds = 0;
 
-        // Iterar sobre los argumentos
+        // Procesar argumentos para días y minutos
         for (const arg of args.slice(1)) {
             const value = parseInt(arg.slice(0, -1)); // Obtener el número
             const unit = arg.slice(-1); // Obtener la unidad
 
             if (isNaN(value) || value <= 0) {
-                const lang = guild.language; // Obtener el idioma configurado
-                return message.reply(messages[lang].invalidValue); // Mensaje de valor inválido
+                const embed = new EmbedBuilder()
+                    .setColor('#f3b0ff')
+                    .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].invalidValue}**`);
+                return message.channel.send({ embeds: [embed] });
             }
 
             if (unit === 'd') {
@@ -42,19 +92,37 @@ module.exports = {
             } else if (unit === 'm') {
                 totalMilliseconds += value * 60 * 1000; // Convertir minutos a milisegundos
             } else {
-                const lang = guild.language; // Obtener el idioma configurado
-                return message.reply(messages[lang].invalidFormat); // Mensaje de formato incorrecto
+                const embed = new EmbedBuilder()
+                    .setColor('#f3b0ff')
+                    .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].invalidFormat}**`);
+                return message.channel.send({ embeds: [embed] });
             }
         }
 
+        if (totalMilliseconds <= 0) {
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].noDuration}**`);
+            return message.channel.send({ embeds: [embed] });
+        }
+
         try {
-            await user.timeout(totalMilliseconds, `Timeout por ${totalMilliseconds / 1000 / 60} minutos.`);
-            const lang = guild.language; // Obtener el idioma configurado
-            message.reply(messages[lang].timeoutSuccess.replace('{user}', user.user.tag).replace('{duration}', totalMilliseconds / 1000 / 60)); // Mensaje de éxito
+            const timeoutReason = messages[lang].timeoutReason
+                .replace('{user}', message.author.tag)
+                .replace('{duration}', totalMilliseconds / 1000 / 60);
+
+            await userToTimeout.timeout(totalMilliseconds, timeoutReason);
+
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<:timeout:1307470217013887017> ' + `**${messages[lang].timeoutSuccess.replace('{user}', userToTimeout.user.tag).replace('{duration}', totalMilliseconds / 1000 / 60)}**`);
+            return message.channel.send({ embeds: [embed] });
         } catch (error) {
             console.error(error);
-            const lang = guild.language; // Obtener el idioma configurado
-            message.reply(messages[lang].timeoutError); // Mensaje de error
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> ' + `**${messages[lang].timeoutError}**`);
+            return message.channel.send({ embeds: [embed] });
         }
     },
 };

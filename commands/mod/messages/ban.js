@@ -10,13 +10,19 @@ const messages = {
         memberNotFound: 'No se pudo encontrar al miembro en el servidor.',
         bannedBy: 'Baneado por',
         setupRequired: 'Debes usar `!setup` para configurar el bot en este servidor.',
-        userToBan: 'El usuario a banear', // Mensaje para la opción de usuario
+        userToBan: 'El usuario a banear',
         descu: 'Banear a una persona.',
         cannotBanBot: 'No puedes banear a un bot.',
-        higherRank: 'No puedes banear a un miembro con rango superior al mío.', // Aquí agregamos higherRank
-        cannotBanHigherPerms: 'No puedes banear a un miembro con permisos superiores a los tuyos.'
+        higherRank: 'No puedes banear a un miembro con rango superior al mío.',
+        cannotBanHigherPerms: 'No puedes banear a un miembro con permisos superiores a los tuyos.',
+        dmTitle: 'Has sido baneado',
+        dmDescription: 'Has sido baneado del servidor **{server}**.',
+        dmReason: 'Razón: {reason}',
+        boterror: 'No tengo suficientes permisos para banear!',
+        banReason: 'Has sido baneado por un administrador, no especificó por qué.'
     },
     en: {
+        boterror: 'I do not have enough permissions to ban!',
         noPermissions: 'You do not have permission to ban members.',
         mentionUser: 'You must mention a user to ban.',
         banReason: 'You have been banned by an administrator.',
@@ -27,14 +33,21 @@ const messages = {
         memberNotFound: 'Could not find the member in the server.',
         bannedBy: 'Banned by',
         setupRequired: 'You must use `!setup` to configure the bot on this server.',
-        userToBan: 'The user to ban', // Mensaje para la opción de usuario
+        userToBan: 'The user to ban',
         descu: 'Ban a person.',
         cannotBanBot: 'You cannot ban a bot.',
-        higherRank: 'You cannot ban a member with a higher rank than mine.', // Aquí agregamos higherRank
-        cannotBanHigherPerms: 'You cannot ban a member with higher permissions than yours.'
+        higherRank: 'You cannot ban a member with a higher rank than mine.',
+        cannotBanHigherPerms: 'You cannot ban a member with higher permissions than yours.',
+        dmTitle: 'You have been banned',
+        dmDescription: 'You have been banned from the server **{server}**.',
+        dmReason: 'Reason: {reason}',
+        banReason: 'You have been banned by an administrator, no reason was specified.'
+        
     },
     fr: {
+        boterror: 'Je n\'ai pas assez de permissions pour bannir!',
         noPermissions: 'Vous n\'avez pas la permission de bannir des membres.',
+        banReason: 'Vous avez été banni par un administrateur, aucune raison n\'a été spécifiée.',
         mentionUser: 'Vous devez mentionner un utilisateur à bannir.',
         banReason: 'Vous avez été banni par un administrateur.',
         banTitle: 'Utilisateur Banni',
@@ -44,11 +57,14 @@ const messages = {
         memberNotFound: 'Impossible de trouver le membre sur le serveur.',
         bannedBy: 'Banni par',
         setupRequired: 'Vous devez utiliser `!setup` pour configurer le bot sur ce serveur.',
-        userToBan: 'L\'utilisateur à bannir', // Mensaje para la opción de usuario
+        userToBan: 'L\'utilisateur à bannir',
         descu: 'Bannir une personne.',
         cannotBanBot: 'Vous ne pouvez pas bannir un bot.',
-        higherRank: 'Vous ne pouvez pas bannir un membre ayant un rang plus élevé que le mien.', // Aquí agregamos higherRank
-        cannotBanHigherPerms: 'Vous ne pouvez pas bannir un membre ayant des permissions supérieures aux vôtres.'
+        higherRank: 'Vous ne pouvez pas bannir un membre ayant un rang plus élevé que le mien.',
+        cannotBanHigherPerms: 'Vous ne pouvez pas bannir un membre ayant des permissions supérieures aux vôtres.',
+        dmTitle: 'Vous avez été banni',
+        dmDescription: 'Vous avez été banni du serveur **{server}**.',
+        dmReason: 'Raison: {reason}'
     }
 };
 
