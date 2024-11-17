@@ -1,6 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, StringSelectMenuBuilder } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
 const GuildSetup = require('../../Schemas/guildSetup');
+const messages = require('./messages/setuplogs'); // Archivo de mensajes
 
 module.exports = {
     name: 'setuplogs',
@@ -8,34 +9,57 @@ module.exports = {
     async execute(message) {
         try {
             const guildId = message.guild.id;
-
             const guild = await GuildSetup.findOne({ guildId });
+
+            // Determinar idioma del servidor
+            const lang = guild?.language || 'en';
+
             if (!guild || !guild.isSetupComplete) {
-                return message.channel.send('Por favor, completa la configuración del servidor antes de configurar los logs.');
+                return message.channel.send(messages[lang].setupRequired);
             }
 
             let logSettings = await LogSettings.findOne({ guildId }) || new LogSettings({ guildId });
             if (!logSettings._id) await logSettings.save();
 
             const categories = [
-                { label: 'Miembro', value: 'member', description: 'Logs relacionados con miembros' },
-                { label: 'Mensajes', value: 'message', description: 'Logs de mensajes' },
-                { label: 'Roles', value: 'role', description: 'Logs relacionados con roles' },
-                { label: 'Canales', value: 'channel', description: 'Logs de canales' },
-                { label: 'Moderación', value: 'mod', description: 'Logs de moderación' },
+                {
+                    label: messages[lang].categories.member.label,
+                    value: 'member',
+                    description: messages[lang].categories.member.description,
+                },
+                {
+                    label: messages[lang].categories.message.label,
+                    value: 'message',
+                    description: messages[lang].categories.message.description,
+                },
+                {
+                    label: messages[lang].categories.role.label,
+                    value: 'role',
+                    description: messages[lang].categories.role.description,
+                },
+                {
+                    label: messages[lang].categories.channel.label,
+                    value: 'channel',
+                    description: messages[lang].categories.channel.description,
+                },
+                {
+                    label: messages[lang].categories.mod.label,
+                    value: 'mod',
+                    description: messages[lang].categories.mod.description,
+                },
             ];
 
             const showMainMenu = async () => {
                 const selectMenu = new ActionRowBuilder().addComponents(
                     new StringSelectMenuBuilder()
                         .setCustomId('log_category')
-                        .setPlaceholder('Selecciona una categoría de logs')
+                        .setPlaceholder(messages[lang].selectPlaceholder)
                         .addOptions(categories)
                 );
 
                 const categoryEmbed = new EmbedBuilder()
-                    .setTitle('Configuración de Logs - Categorías')
-                    .setDescription('Selecciona una categoría para configurar los logs correspondientes.')
+                    .setTitle(messages[lang].mainMenu.title)
+                    .setDescription(messages[lang].mainMenu.description)
                     .setColor('#ff0000');
 
                 await sentMessage.edit({
@@ -45,7 +69,7 @@ module.exports = {
             };
 
             const sentMessage = await message.channel.send({
-                embeds: [new EmbedBuilder().setTitle('Configuración de Logs').setDescription('Cargando menú...').setColor('#ff0000')],
+                embeds: [new EmbedBuilder().setTitle(messages[lang].loading.title).setDescription(messages[lang].loading.description).setColor('#ff0000')],
             });
 
             await showMainMenu();
@@ -58,7 +82,7 @@ module.exports = {
             collector.on('collect', async (interaction) => {
                 try {
                     if (interaction.user.id !== message.author.id) {
-                        return interaction.reply({ content: 'No puedes interactuar con este setup.', ephemeral: true });
+                        return interaction.reply({ content: messages[lang].noPermissionInteraction, ephemeral: true });
                     }
 
                     if (!interaction.deferred && !interaction.replied) {
@@ -66,25 +90,25 @@ module.exports = {
                     }
 
                     const selectedCategory = interaction.values[0];
-                    const categoryConfig = getCategoryConfig(selectedCategory);
+                    const categoryConfig = getCategoryConfig(selectedCategory, lang);
 
                     if (!categoryConfig) {
-                        return interaction.followUp({ content: 'Categoría inválida.', ephemeral: true });
+                        return interaction.followUp({ content: messages[lang].invalidCategory, ephemeral: true });
                     }
 
                     const logEmbed = new EmbedBuilder()
                         .setTitle(categoryConfig.title)
-                        .setDescription('Selecciona qué logs deseas activar/desactivar.')
+                        .setDescription(messages[lang].selectLogType)
                         .setColor('#ff0000');
 
-                    const buttons = createButtons(categoryConfig.logTypes, logSettings);
+                    const buttons = createButtons(categoryConfig.logTypes, logSettings, lang);
                     const rows = splitComponentsIntoRows(buttons);
 
                     rows.push(
                         new ActionRowBuilder().addComponents(
                             new ButtonBuilder()
                                 .setCustomId('back_to_menu')
-                                .setLabel('Regresar al Menú')
+                                .setLabel(messages[lang].backToMenu)
                                 .setStyle(ButtonStyle.Secondary)
                         )
                     );
@@ -99,7 +123,7 @@ module.exports = {
                     buttonCollector.on('collect', async (buttonInteraction) => {
                         try {
                             if (buttonInteraction.user.id !== message.author.id) {
-                                return buttonInteraction.reply({ content: 'No puedes interactuar con este setup.', ephemeral: true });
+                                return buttonInteraction.reply({ content: messages[lang].noPermissionInteraction, ephemeral: true });
                             }
                     
                             try {
@@ -107,11 +131,12 @@ module.exports = {
                                     await buttonInteraction.deferUpdate();
                                 }
                             } catch (error) {
-                                // Silenciar cualquier error aquí
+                                // Silenciar errores de interacción ya reconocida
                             }
                     
+                            // Manejar el botón "Back to Menu" directamente
                             if (buttonInteraction.customId === 'back_to_menu') {
-                                await showMainMenu();
+                                await showMainMenu(); // Llamar al menú principal
                                 return;
                             }
                     
@@ -119,20 +144,29 @@ module.exports = {
                             const logEnabledKey = `${logType}Enabled`;
                             const logChannelKey = `${logType}ChannelId`;
                     
-                            if (!logSettings[logEnabledKey]) {
+                            // Verificar si el log está habilitado
+                            const isEnabled = logSettings[logEnabledKey];
+                    
+                            if (!isEnabled) {
+                                // Solo solicitar el canal si el log no está habilitado
                                 const followUpMessage = await buttonInteraction.followUp({
-                                    content: `Por favor, escribe el ID del canal donde deseas recibir los logs de ${logType}.`,
+                                    content: messages[lang].enterChannelId.replace('{logType}', logType),
                                     ephemeral: false,
                                 });
                     
+                                // Asegurarse de que solo se recoja una respuesta
                                 const filter = (response) => response.author.id === message.author.id;
                                 const collected = await message.channel.awaitMessages({ filter, max: 1, time: 60000 }).catch(() => null);
                     
+                                // Validar el canal ingresado
                                 const channelId = collected?.first()?.content;
                                 const channel = message.guild.channels.cache.get(channelId);
                     
                                 if (!channel || channel.type !== 0) {
-                                    const errorMessage = await buttonInteraction.followUp({ content: 'ID de canal inválido. Asegúrate de ingresar un canal de texto válido.', ephemeral: false });
+                                    const errorMessage = await buttonInteraction.followUp({
+                                        content: messages[lang].invalidChannelId,
+                                        ephemeral: false,
+                                    });
                                     await followUpMessage.delete();
                                     setTimeout(() => errorMessage.delete(), 5000);
                                     return;
@@ -143,7 +177,7 @@ module.exports = {
                                 await logSettings.save();
                     
                                 const successMessage = await buttonInteraction.followUp({
-                                    content: `Los logs de ${logType} ahora se enviarán a ${channel.toString()}.`,
+                                    content: messages[lang].logEnabledMessage.replace('{logType}', logType).replace('{channel}', channel.toString()),
                                     ephemeral: false,
                                 });
                     
@@ -152,35 +186,41 @@ module.exports = {
                     
                                 setTimeout(() => successMessage.delete(), 5000);
                             } else {
+                                // Si el log está habilitado, desactivarlo directamente
                                 logSettings[logEnabledKey] = false;
                                 logSettings[logChannelKey] = null;
                                 await logSettings.save();
                     
                                 const disableMessage = await buttonInteraction.followUp({
-                                    content: `El log de ${logType} ha sido desactivado.`,
+                                    content: messages[lang].logDisabledMessage.replace('{logType}', logType),
                                     ephemeral: false,
                                 });
                     
                                 setTimeout(() => disableMessage.delete(), 5000);
                             }
                     
-                            const updatedButtons = createButtons(categoryConfig.logTypes, logSettings);
+                            // Actualizar botones
+                            const updatedButtons = createButtons(categoryConfig.logTypes, logSettings, lang);
                             const updatedRows = splitComponentsIntoRows(updatedButtons);
                     
                             updatedRows.push(
                                 new ActionRowBuilder().addComponents(
                                     new ButtonBuilder()
                                         .setCustomId('back_to_menu')
-                                        .setLabel('Regresar al Menú')
+                                        .setLabel(messages[lang].backToMenu)
                                         .setStyle(ButtonStyle.Secondary)
                                 )
                             );
                     
                             await sentMessage.edit({ components: updatedRows });
                         } catch (error) {
-                            // Silenciar todos los errores
+                            // Silenciar cualquier otro error
                         }
                     });
+                    
+                    
+                    
+                    
 
                     buttonCollector.on('end', () => disableComponents(sentMessage));
                 } catch (error) {
@@ -191,10 +231,35 @@ module.exports = {
             collector.on('end', () => disableComponents(sentMessage));
         } catch (error) {
             console.error('Error general en setuplogs:', error);
-            message.channel.send('Hubo un problema al configurar los logs. Por favor, inténtalo nuevamente.');
+            message.channel.send(messages[lang].generalError);
         }
     },
 };
+
+function getCategoryConfig(category, lang) {
+    const config = {
+        member: { logTypes: ['memberJoin', 'memberLeave'], title: messages[lang].categories.member.title },
+        message: { logTypes: ['messageDelete', 'messageUpdate'], title: messages[lang].categories.message.title },
+        role: { logTypes: ['roleCreate', 'roleDelete', 'roleUpdate'], title: messages[lang].categories.role.title },
+        channel: { logTypes: ['channelCreate', 'channelDelete', 'channelEdit'], title: messages[lang].categories.channel.title },
+        mod: { logTypes: ['userBan', 'userTimeout'], title: messages[lang].categories.mod.title },
+    };
+    return config[category] || null;
+}
+
+function createButtons(logTypes, logSettings, lang) {
+    return logTypes.map((logType) => {
+        const isEnabled = logSettings[`${logType}Enabled`];
+        return new ButtonBuilder()
+            .setCustomId(`${logType}_toggle`)
+            .setLabel(
+                isEnabled
+                    ? messages[lang].logEnabledButton.replace('{logType}', logType)
+                    : messages[lang].logDisabledButton.replace('{logType}', logType)
+            )
+            .setStyle(isEnabled ? ButtonStyle.Success : ButtonStyle.Danger);
+    });
+}
 
 function splitComponentsIntoRows(components, maxPerRow = 5) {
     const rows = [];
@@ -215,25 +280,4 @@ function disableComponents(message) {
     } catch (error) {
         console.error('Error al desactivar componentes:', error);
     }
-}
-
-function getCategoryConfig(category) {
-    const config = {
-        member: { logTypes: ['memberJoin', 'memberLeave'], title: 'Configuración de Logs - Miembros' },
-        message: { logTypes: ['messageDelete', 'messageUpdate'], title: 'Configuración de Logs - Mensajes' },
-        role: { logTypes: ['roleCreate', 'roleDelete', 'roleUpdate'], title: 'Configuración de Logs - Roles' },
-        channel: { logTypes: ['channelCreate', 'channelDelete', 'channelEdit'], title: 'Configuración de Logs - Canales' },
-        mod: { logTypes: ['userBan', 'userTimeout'], title: 'Configuración de Logs - Moderación' },
-    };
-    return config[category] || null;
-}
-
-function createButtons(logTypes, logSettings) {
-    return logTypes.map((logType) => {
-        const isEnabled = logSettings[`${logType}Enabled`];
-        return new ButtonBuilder()
-            .setCustomId(`${logType}_toggle`)
-            .setLabel(isEnabled ? `${logType} (Activado)` : `${logType} (Desactivado)`)
-            .setStyle(isEnabled ? ButtonStyle.Success : ButtonStyle.Danger);
-    });
 }
