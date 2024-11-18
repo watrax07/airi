@@ -7,8 +7,9 @@ const messages = require('./messages/setwarnaction'); // Archivo de mensajes mul
 module.exports = {
     name: 'setwarnaction',
     description: 'Establece, muestra o elimina acciones automáticas basadas en el número de advertencias.',
-    owner: true,
-    category: 'Admin',
+    owner: false,
+    category: 'setup',
+    
     async execute(message, args) {
         const guildId = message.guild.id;
         const guild = await GuildSetup.findOne({ guildId: guildId }); // Obtener el idioma del servidor

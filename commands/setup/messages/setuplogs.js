@@ -2,7 +2,7 @@ const messages = {
     es: {
         setupRequired: 'Debes usar `!setup` para configurar el bot en este servidor.',
         noPermissionInteraction: 'No puedes interactuar con esta configuración.',
-        invalidCategory: 'Categoría inválida.',
+        invalidCategory: 'Categoría inválida, revisa que no se esté ejecutando otro menú dentro del canal. Vuelve a intentarlo en unos minutos.',
         selectPlaceholder: 'Selecciona una categoría de logs',
         mainMenu: {
             title: 'Configuración de Logs - Categorías',
@@ -52,7 +52,7 @@ const messages = {
     en: {
         setupRequired: 'You must use `!setup` to configure the bot on this server.',
         noPermissionInteraction: 'You cannot interact with this setup.',
-        invalidCategory: 'Invalid category.',
+        invalidCategory: 'Invalid category, check that no other menu is running in this channel. Please try again in a few minutes.',
         selectPlaceholder: 'Select a log category',
         mainMenu: {
             title: 'Log Configuration - Categories',
@@ -102,7 +102,7 @@ const messages = {
     fr: {
         setupRequired: 'Vous devez utiliser `!setup` pour configurer le bot sur ce serveur.',
         noPermissionInteraction: 'Vous ne pouvez pas interagir avec cette configuration.',
-        invalidCategory: 'Catégorie invalide.',
+        invalidCategory: "Catégorie invalide, vérifiez qu'aucun autre menu n'est en cours d'exécution dans ce canal. Veuillez réessayer dans quelques minutes.",
         selectPlaceholder: 'Sélectionnez une catégorie de logs',
         mainMenu: {
             title: 'Configuration des Logs - Catégories',

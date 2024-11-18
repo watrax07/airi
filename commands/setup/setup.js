@@ -5,6 +5,8 @@ const messages = require('./messages/setup.js');
 module.exports = {
     name: 'setup',
     description: 'Configura el bot para este servidor',
+    owner: false,
+    category: 'setup',
     async execute(message) {
         const guildId = message.guild.id;
         let guild = await GuildSetup.findOne({ guildId: guildId });
@@ -24,7 +26,10 @@ module.exports = {
         }
 
         if (!message.member.permissions.has('ADMINISTRATOR')) {
-            return message.reply('<:animehi:1291920678022545409> No tienes permisos para hacer eso.'); 
+            const embed = new EmbedBuilder()
+                .setColor('#f3b0ff')
+                .setDescription('<a:x_:1307446452913574071> You dont have perms to do that.');
+            return message.channel.send({ embeds: [embed] });
         }
 
         const row = new ActionRowBuilder().addComponents(
