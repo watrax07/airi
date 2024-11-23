@@ -27,30 +27,35 @@ module.exports = {
             if (!logSettings._id) await logSettings.save();
 
             const categories = [
-                {
+                { 
                     label: messages[lang].categories.member.label,
                     value: 'member',
                     description: messages[lang].categories.member.description,
+                    emoji: `<:uno:1307882016015908864>`,
                 },
                 {
                     label: messages[lang].categories.message.label,
                     value: 'message',
                     description: messages[lang].categories.message.description,
+                    emoji: `<:dos:1307882099503792179>`,
                 },
                 {
                     label: messages[lang].categories.role.label,
                     value: 'role',
                     description: messages[lang].categories.role.description,
+                    emoji: `<:tres:1307882141857611846>`,
                 },
                 {
-                    label: messages[lang].categories.channel.label,
+                     label: messages[lang].categories.channel.label,
                     value: 'channel',
                     description: messages[lang].categories.channel.description,
+                    emoji: `<:cuatro:1307882205086879764>`,
                 },
                 {
                     label: messages[lang].categories.mod.label,
                     value: 'mod',
                     description: messages[lang].categories.mod.description,
+                    emoji:  `<:cinco:1307882460352348250>`,
                 },
             ];
 
@@ -73,14 +78,14 @@ module.exports = {
                 const selectMenu = new ActionRowBuilder().addComponents(
                     new StringSelectMenuBuilder()
                         .setCustomId(`log_category_${Date.now()}`) // Custom ID único
-                        .setPlaceholder(messages[lang].selectPlaceholder)
+                        .setPlaceholder( `📁` + messages[lang].selectPlaceholder)
                         .addOptions(categories)
                 );
 
                 const categoryEmbed = new EmbedBuilder()
-                    .setTitle(messages[lang].mainMenu.title)
-                    .setDescription(messages[lang].mainMenu.description)
-                    .setColor('#ff0000');
+                    .setTitle(`<:log:1307735899131347045>` + messages[lang].mainMenu.title)
+                    .setDescription(messages[lang].mainMenu.description + `<:arrow_down:1307882566841532427>`)
+                    .setColor('#98fdfa');
 
                 await sentMessage.edit({
                     embeds: [categoryEmbed],
@@ -122,7 +127,7 @@ module.exports = {
                     const logEmbed = new EmbedBuilder()
                         .setTitle(categoryConfig.title)
                         .setDescription(messages[lang].selectLogType)
-                        .setColor('#ff0000');
+                        .setColor(`#98fdfa`);
 
                     const buttons = createButtons(categoryConfig.logTypes, logSettings, lang);
                     const rows = splitComponentsIntoRows(buttons);

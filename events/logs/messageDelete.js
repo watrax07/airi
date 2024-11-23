@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, AuditLogEvent, channelMention, time, userMention } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
 module.exports = {
     name: 'messageDelete',
@@ -18,15 +18,31 @@ module.exports = {
             if (!logChannel) {
                 return;
             }
+            const auditLogs = await message.guild.fetchAuditLogs({
+                type: AuditLogEvent.MessageDelete, 
+                limit: 1
+                
+            });
+
+            const createLog = auditLogs.entries.first();
+            const executor = createLog ? createLog.executor : null;
+            const executorTag = executor ? executor.tag : `Desconocido`;
+            const channelTag =  channelMention(message.channel.id);
+            const date = new Date();
+            const Time = time(date); 
+            const Content =  message.content.length > 0 ? `${message.content}` : 'Mensaje sin contenido visible';
+
+
 
             const embed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('🚫 Mensaje Eliminado')
                 .setDescription(`Un mensaje de **${message.author.tag}** fue eliminado en **${message.channel.name}**.`)
                 .addFields(
-                    { name: 'Contenido', value: message.content.length > 0 ? `"${message.content}"` : 'Mensaje sin contenido visible' },
-                    { name: 'Autor', value: `${message.author.tag}`, inline: true },
-                    { name: 'Canal', value: `${message.channel.name}`, inline: true }
+                    { name: 'Contenido', value:  `\`\`\`${Content}\`\`\`` ||  `\`\`\`Contenido no visible\`\`\`` },
+                    { name: `Responsable`, value:  `\`\`\`${executorTag}\`\`\`` ||  `\`\`\`Contenido no visible\`\`\``},
+                    { name: `Mensaje eliminado a las:`, value: Time, inline:true},
+                    { name: 'Mensaje elminado en:', value: channelTag, inline: true }
                 )
                 .setTimestamp();
 
@@ -34,3 +50,5 @@ module.exports = {
         }
     },
 };
+
+// mia

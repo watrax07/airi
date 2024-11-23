@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, time, AuditLogEvent } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
 
 module.exports = {
@@ -23,13 +23,29 @@ module.exports = {
                 return;
             }
 
+            const auditLogs = await member.guild.fetchAuditLogs({
+                type: AuditLogEvent.guildMemberAdd,
+                limit: 1
+                
+            });
+
+            const  createLog = auditLogs.entries.first();
+            const executor = createLog ? createLog.executor : null;
+            const executorTag = executor ? executor.tag : `Desconocido`;
+
+            const Nombre = member.user.tag 
+            const date = new Date()
+            const Time = time(date)
+
             // Creamos un embed para mostrar el detalle del nuevo miembro que ingresó
             const embed = new EmbedBuilder()
                 .setColor('#00FF00') // Verde, para indicar que el miembro se ha unido correctamente
                 .setTitle('🟢 Nuevo Miembro')
                 .setDescription(`¡Bienvenido **${member.user.tag}** al servidor!`)
                 .addFields(
-                    { name: 'Miembro desde', value: new Date().toLocaleString(), inline: true },
+                    { name: `Usuario añadido: `, value:`\`\`\`${Nombre}\`\`\`` || `\`\`\`Contenido no visible\`\`\`` },
+                    { name: `Invitado Por`, value: `\`\`\`${executorTag}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
+                    { name: '', value: Time, inline: true },
                     { name: 'Miembros Totales', value: `${member.guild.memberCount}`, inline: true }
                 )
                 .setTimestamp();
@@ -39,3 +55,5 @@ module.exports = {
         }
     },
 };
+
+//  mia

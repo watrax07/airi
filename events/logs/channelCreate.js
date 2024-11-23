@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, channelMention, time, AuditLogEvent } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
 
 module.exports = {
@@ -13,22 +13,42 @@ module.exports = {
         const logChannel = channel.guild.channels.cache.get(logSettings.channelCreateChannelId);
         if (!logChannel) return;
 
+        const auditLogs = await channel.guild.fetchAuditLogs({
+            type: AuditLogEvent.ChannelCreate,
+            limit: 1
+
+        });
+        const createLog = auditLogs.entries.first();
+        const executor = createLog ? createLog.executor : null;
+        const executorTag = executor ? executor.tag : `Desconocido`;
+
         // Asegúrate de validar correctamente los valores del canal
-        const channelType = channel.type || 'Desconocido';
         const channelName = channel.name || 'Sin nombre';
         const channelId = channel.id || 'ID no disponible';
+        const channelTag  = channelMention(channelId);
+        const date = new Date();
+
+        const  Time = time(date);
+        
+       
 
         const embed = new EmbedBuilder()
             .setColor('#00ff00')
-            .setTitle('📁 Canal Creado')
-            .setDescription(`Un nuevo canal fue creado.`)
+            .setTitle('Canal ha sido creado correctamente ✅')
+            .setDescription(`El canal ${channelName}, Fue creado verifica su informacion<:arrow_down:1307882566841532427>`)
             .addFields(
-                { name: 'Nombre', value: channelName, inline: true },
-                { name: 'Tipo', value: channelType, inline: true },
-                { name: 'ID del Canal', value: channelId, inline: true }
+                { name: 'Nombre del canal', value: `\`\`\`${channelName}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
+                { name: 'ID del canal', value: `\`\`\`${channelId}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
+                { name: `Creado por:`, value: executorTag, inline: true},
+                { name: `Canal`, value: channelTag, inline: true },
+                { name: `Hora`, value: Time, inline: true }
+                
             )
-            .setTimestamp();
+            .setTimestamp()
+            
 
         logChannel.send({ embeds: [embed] });
     },
 };
+
+// mia

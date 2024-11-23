@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, time,  AuditLogEvent } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
 module.exports = {
     name: 'roleDelete',
@@ -19,14 +19,30 @@ module.exports = {
                 return;
             }
 
+            const auditLogs = await role.guild.fetchAuditLogs({
+                type: AuditLogEvent.RoleDelete, 
+                limit: 1
+                
+            });
+
+            const  createLog = auditLogs.entries.first();
+            const executor = createLog ? createLog.executor : null;
+            const executorTag = executor ? executor.tag : `Desconocido`;
+
+            const  date = new  Date();
+            const Time = time(date)
+            const nombre = role.name
+
             const embed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle('🛑 Rol Eliminado')
-                .setDescription(`El rol **${role.name}** fue eliminado del servidor.`)
+                .setDescription(`El rol **${role.name}** acaba de ser eliminado del servidor.`)
                 .addFields(
-                    { name: 'ID del Rol', value: role.id, inline: true },
+                    { name: `Nombre del rol`, value: `\`\`\`${nombre}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
+                    { name: 'ID del Rol', value: `\`\`\`${role.id}\`\`\`` || `\`\`\`Contenido no visible\`\`\``}, 
                     { name: 'Color', value: role.color.toString(16), inline: true },
-                    { name: 'Mencionar Rol', value: role.toString(), inline: true }
+                    { name: `Eliminado a las:`,  value: Time, inline: true},
+                    { name: `Eliminado por`, value: executorTag, inline: true}
                 )
                 .setTimestamp();
 
@@ -34,3 +50,5 @@ module.exports = {
         }
     },
 };
+
+// mia

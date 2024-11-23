@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, roleMention, time } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
 
 module.exports = {
@@ -32,16 +32,22 @@ module.exports = {
         if (!permissionChanges) {
             permissionChanges = 'No se detectaron cambios en los permisos.';
         }
+         const roleID = oldRole.id 
+         const roleTag = roleMention(roleID);
+         const date = new Date();
+         const Time = time(date);
 
         // Crear embed
         const embed = new EmbedBuilder()
             .setColor('#ffaa00')
             .setTitle('✏️ Rol Actualizado')
-            .setDescription(`El rol **${oldRole.name}** fue actualizado.`)
+            .setDescription(`El rol **${oldRole.name}**, Acaba de ser actualizado verifica su informacion abajo`)
             .addFields(
-                { name: 'Rol Anterior', value: oldRole.name || 'Sin nombre', inline: true },
-                { name: 'Rol Nuevo', value: newRole.name || 'Sin nombre', inline: true },
-                { name: 'ID del Rol', value: newRole.id || 'ID no disponible', inline: true }
+                { name: 'Nombre Anterior', value: `\`\`\`${oldRole.name}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
+                { name: 'Nombre  Nuevo', value: `\`\`\`${newRole.name}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
+                { name: `Id Del rol:`, value: roleID, inline: true},
+                { name: 'Rol Cambiado:', value: roleTag || 'ID no disponible', inline: true },
+                { name: `Hora y fecha`, value: Time, inline: true}
             )
             .addFields({ name: 'Cambios en los Permisos', value: permissionChanges })
             .setTimestamp();
@@ -49,3 +55,5 @@ module.exports = {
         logChannel.send({ embeds: [embed] });
     },
 };
+
+// mia

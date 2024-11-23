@@ -21,7 +21,7 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setColor(newTimeout ? '#ff9900' : '#00ff00')
-                .setTitle(newTimeout ? '⏳ Usuario en Timeout' : '✅ Timeout Finalizado')
+                .setTitle(newTimeout ? '⏳ ${newMember.user.tag} acaba de ser Timeout' : '✅ Timeout Finalizado')
                 .setDescription(`El usuario **${newMember.user.tag}** ${newTimeout ? 'fue puesto en timeout' : 'ha salido del timeout'}.`)
                 .addFields({ name: 'Duración', value: newTimeout ? duration : 'N/A', inline: true })
                 .setTimestamp();

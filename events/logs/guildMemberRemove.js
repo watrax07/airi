@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, time } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
 
 module.exports = {
@@ -23,13 +23,20 @@ module.exports = {
                 return;
             }
 
+            const nombre = member.user.tag
+            const userID = member.user.id
+            const date = new Date(member.joinedTimestamp);
+            const Time = time(date)
+
             // Creamos un embed para mostrar el detalle del miembro que salió
             const embed = new EmbedBuilder()
                 .setColor('#FF0000') // Rojo, para indicar que el miembro se ha ido
                 .setTitle('🔴 Miembro Salió')
                 .setDescription(`**${member.user.tag}** ha abandonado el servidor.`)
                 .addFields(
-                    { name: 'Miembro desde', value: new Date(member.joinedTimestamp).toLocaleString(), inline: true },
+                    { name: `Usuario que ha salido:`, value: `\`\`\`${nombre}\`\`\`` || `\`\`\`Contenido no visible\`\`\`` },
+                    { name: `ID del usuario`,  value: `\`\`\`${userID}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
+                    { name: 'Miembro desde', value: Time, inline: true },
                     { name: 'Miembros Totales', value: `${member.guild.memberCount}`, inline: true }
                 )
                 .setTimestamp();
@@ -39,3 +46,5 @@ module.exports = {
         }
     },
 };
+
+// mia
