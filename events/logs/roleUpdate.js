@@ -1,12 +1,20 @@
 const { EmbedBuilder, roleMention, time } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
+const GuildSetup = require('../../Schemas/guildSetup'); // Importar GuildSetup
+const messages = require('./messages/roleUpdate'); // Importar mensajes
 
 module.exports = {
     name: 'roleUpdate',
     async execute(client, oldRole, newRole) {
-
         if (!newRole.guild) return;
 
+        // Obtener configuración del servidor
+        const guildSetup = await GuildSetup.findOne({ guildId: newRole.guild.id });
+        if (!guildSetup || !guildSetup.isSetupComplete) return;
+
+        const lang = guildSetup.language || 'en'; // Determinar idioma del servidor
+
+        // Obtener configuración de logs
         const logSettings = await LogSettings.findOne({ guildId: newRole.guild.id });
         if (!logSettings || !logSettings.roleUpdateEnabled || !logSettings.roleUpdateChannelId) return;
 
@@ -22,38 +30,39 @@ module.exports = {
         const removedPermissions = oldPermissions.filter(p => !newPermissions.includes(p));
 
         if (addedPermissions.length > 0) {
-            permissionChanges += `✅ **Permisos Agregados**:\n\`${addedPermissions.join(', ')}\`\n`;
+            permissionChanges += `${messages[lang].addedPermissions}\n\`${addedPermissions.join(', ')}\`\n`;
         }
 
         if (removedPermissions.length > 0) {
-            permissionChanges += `❌ **Permisos Eliminados**:\n\`${removedPermissions.join(', ')}\`\n`;
+            permissionChanges += `${messages[lang].removedPermissions}\n\`${removedPermissions.join(', ')}\`\n`;
         }
 
         if (!permissionChanges) {
-            permissionChanges = 'No se detectaron cambios en los permisos.';
+            permissionChanges = messages[lang].noPermissionChanges;
         }
-         const roleID = oldRole.id 
-         const roleTag = roleMention(roleID);
-         const date = new Date();
-         const Time = time(date);
 
-        // Crear embed
+        const roleID = oldRole.id;
+        const roleTag = roleMention(roleID);
+        const Time = time(new Date());
+
+        // Crear embed multilenguaje
         const embed = new EmbedBuilder()
             .setColor('#ffaa00')
-            .setTitle('✏️ Rol Actualizado')
-            .setDescription(`El rol **${oldRole.name}**, Acaba de ser actualizado verifica su informacion abajo`)
-            .addFields(
-                { name: 'Nombre Anterior', value: `\`\`\`${oldRole.name}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
-                { name: 'Nombre  Nuevo', value: `\`\`\`${newRole.name}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
-                { name: `Id Del rol:`, value: roleID, inline: true},
-                { name: 'Rol Cambiado:', value: roleTag || 'ID no disponible', inline: true },
-                { name: `Hora y fecha`, value: Time, inline: true}
+            .setTitle(messages[lang].title)
+            .setDescription(
+                messages[lang].description.replace('{oldRoleName}', oldRole.name || messages[lang].unknown)
             )
-            .addFields({ name: 'Cambios en los Permisos', value: permissionChanges })
+            .addFields(
+                { name: messages[lang].oldName, value: `\`\`\`${oldRole.name || messages[lang].unknown}\`\`\`` },
+                { name: messages[lang].newName, value: `\`\`\`${newRole.name || messages[lang].unknown}\`\`\`` },
+                { name: messages[lang].roleId, value: `\`\`\`${roleID}\`\`\``, inline: true },
+                { name: messages[lang].roleTag, value: roleTag || messages[lang].unknown, inline: true },
+                { name: messages[lang].time, value: Time, inline: true }
+            )
+            .addFields({ name: messages[lang].permissionChanges, value: permissionChanges })
             .setTimestamp();
 
+        // Enviar embed al canal configurado
         logChannel.send({ embeds: [embed] });
     },
 };
-
-// mia

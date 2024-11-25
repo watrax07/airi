@@ -1,54 +1,54 @@
-const { EmbedBuilder, AuditLogEvent, channelMention, time, userMention } = require('discord.js');
+const { EmbedBuilder, time } = require('discord.js'); // Usar `time` para marcas de tiempo
 const LogSettings = require('../../Schemas/LogSchema');
+const GuildSetup = require('../../Schemas/guildSetup'); // Importar GuildSetup
+const messages = require('./messages/messageDelete'); // Importar mensajes
+
 module.exports = {
     name: 'messageDelete',
     async execute(client, message) {
-        
-        if (!message.guild) {
-            return;
-        }
+        if (!message.guild) return;
 
+        // Obtener configuración del servidor
+        const guildSetup = await GuildSetup.findOne({ guildId: message.guild.id });
+        if (!guildSetup || !guildSetup.isSetupComplete) return;
+
+        const lang = guildSetup.language || 'en'; // Determinar idioma del servidor
+
+        // Obtener configuración de logs
         const logSettings = await LogSettings.findOne({ guildId: message.guild.id });
-        if (!logSettings) {
-            return;
-        }
+        if (!logSettings || !logSettings.messageDeleteEnabled || !logSettings.messageDeleteChannelId) return;
 
-        if (logSettings.messageDeleteEnabled && logSettings.messageDeleteChannelId) {
-            const logChannel = message.guild.channels.cache.get(logSettings.messageDeleteChannelId);
-            if (!logChannel) {
-                return;
-            }
-            const auditLogs = await message.guild.fetchAuditLogs({
-                type: AuditLogEvent.MessageDelete, 
-                limit: 1
-                
-            });
+        const logChannel = message.guild.channels.cache.get(logSettings.messageDeleteChannelId);
+        if (!logChannel) return;
 
-            const createLog = auditLogs.entries.first();
-            const executor = createLog ? createLog.executor : null;
-            const executorTag = executor ? executor.tag : `Desconocido`;
-            const channelTag =  channelMention(message.channel.id);
-            const date = new Date();
-            const Time = time(date); 
-            const Content =  message.content.length > 0 ? `${message.content}` : 'Mensaje sin contenido visible';
+        // Validar valores del autor y contenido del mensaje
+        const authorTag = message.author?.tag || messages[lang].unknown;
+        const content = message.content && message.content.length > 0
+            ? `"${message.content}"`
+            : messages[lang].noContent;
+        const timestamp = time(new Date()); // Marcar hora y fecha
 
+        // Validar canal
+        const channelName = message.channel?.name || messages[lang].unknown;
 
+        // Crear embed multilenguaje
+        const embed = new EmbedBuilder()
+            .setColor('#ff0000')
+            .setTitle(messages[lang].title)
+            .setDescription(
+                messages[lang].description
+                    .replace('{authorTag}', authorTag)
+                    .replace('{channelName}', channelName)
+            )
+            .addFields(
+                { name: messages[lang].content, value: `\`\`\`${content}\`\`\`` },
+                { name: messages[lang].author, value: `\`\`\`${authorTag}\`\`\`` },
+                { name: messages[lang].deletedAt, value: timestamp, inline: true },
+                { name: messages[lang].deletedIn, value: channelName, inline: true }
+            )
+            .setTimestamp();
 
-            const embed = new EmbedBuilder()
-                .setColor('#ff0000')
-                .setTitle('🚫 Mensaje Eliminado')
-                .setDescription(`Un mensaje de **${message.author.tag}** fue eliminado en **${message.channel.name}**.`)
-                .addFields(
-                    { name: 'Contenido', value:  `\`\`\`${Content}\`\`\`` ||  `\`\`\`Contenido no visible\`\`\`` },
-                    { name: `Responsable`, value:  `\`\`\`${executorTag}\`\`\`` ||  `\`\`\`Contenido no visible\`\`\``},
-                    { name: `Mensaje eliminado a las:`, value: Time, inline:true},
-                    { name: 'Mensaje elminado en:', value: channelTag, inline: true }
-                )
-                .setTimestamp();
-
-            logChannel.send({ embeds: [embed] });
-        }
+        // Enviar el log
+        logChannel.send({ embeds: [embed] });
     },
 };
-
-// mia

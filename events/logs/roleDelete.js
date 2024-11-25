@@ -1,54 +1,62 @@
-const { EmbedBuilder, time,  AuditLogEvent } = require('discord.js');
+const { EmbedBuilder, time, AuditLogEvent } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
+const GuildSetup = require('../../Schemas/guildSetup'); // Importar GuildSetup
+const messages = require('./messages/roleDelete'); // Importar mensajes
+
 module.exports = {
     name: 'roleDelete',
     async execute(client, role) {
+        if (!role.guild) return;
 
-        if (!role.guild) {
-            return;
-        }
+        // Obtener configuración del servidor
+        const guildSetup = await GuildSetup.findOne({ guildId: role.guild.id });
+        if (!guildSetup || !guildSetup.isSetupComplete) return;
 
+        const lang = guildSetup.language || 'en'; // Determinar idioma del servidor
+
+        // Obtener configuración de logs
         const logSettings = await LogSettings.findOne({ guildId: role.guild.id });
-        if (!logSettings) {
-            return;
-        }
+        if (!logSettings || !logSettings.roleDeleteEnabled || !logSettings.roleDeleteChannelId) return;
 
-        if (logSettings.roleDeleteEnabled && logSettings.roleDeleteChannelId) {
-            const logChannel = role.guild.channels.cache.get(logSettings.roleDeleteChannelId);
-            if (!logChannel) {
-                return;
-            }
+        const logChannel = role.guild.channels.cache.get(logSettings.roleDeleteChannelId);
+        if (!logChannel) return;
 
+        // Obtener registros de auditoría
+        let executorTag = messages[lang].unknown;
+        try {
             const auditLogs = await role.guild.fetchAuditLogs({
-                type: AuditLogEvent.RoleDelete, 
-                limit: 1
-                
+                type: AuditLogEvent.RoleDelete,
+                limit: 1,
             });
-
-            const  createLog = auditLogs.entries.first();
-            const executor = createLog ? createLog.executor : null;
-            const executorTag = executor ? executor.tag : `Desconocido`;
-
-            const  date = new  Date();
-            const Time = time(date)
-            const nombre = role.name
-
-            const embed = new EmbedBuilder()
-                .setColor('#ff0000')
-                .setTitle('🛑 Rol Eliminado')
-                .setDescription(`El rol **${role.name}** acaba de ser eliminado del servidor.`)
-                .addFields(
-                    { name: `Nombre del rol`, value: `\`\`\`${nombre}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
-                    { name: 'ID del Rol', value: `\`\`\`${role.id}\`\`\`` || `\`\`\`Contenido no visible\`\`\``}, 
-                    { name: 'Color', value: role.color.toString(16), inline: true },
-                    { name: `Eliminado a las:`,  value: Time, inline: true},
-                    { name: `Eliminado por`, value: executorTag, inline: true}
-                )
-                .setTimestamp();
-
-            logChannel.send({ embeds: [embed] });
+            const createLog = auditLogs.entries.first();
+            if (createLog) {
+                executorTag = createLog.executor?.tag || messages[lang].unknown;
+            }
+        } catch (error) {
+            console.error('Error al obtener registros de auditoría:', error);
         }
+
+        // Datos del rol
+        const roleName = role.name || messages[lang].unknown;
+        const roleId = role.id || messages[lang].unknown;
+        const roleColor = `#${role.color.toString(16).padStart(6, '0')}`;
+        const Time = time(new Date());
+
+        // Crear embed multilenguaje
+        const embed = new EmbedBuilder()
+            .setColor('#ff0000')
+            .setTitle(messages[lang].title)
+            .setDescription(messages[lang].description.replace('{roleName}', roleName))
+            .addFields(
+                { name: messages[lang].roleName, value: `\`\`\`${roleName}\`\`\`` },
+                { name: messages[lang].roleId, value: `\`\`\`${roleId}\`\`\`` },
+                { name: messages[lang].roleColor, value: roleColor, inline: true },
+                { name: messages[lang].deletedAt, value: Time, inline: true },
+                { name: messages[lang].deletedBy, value: executorTag, inline: true }
+            )
+            .setTimestamp();
+
+        // Enviar embed al canal configurado
+        logChannel.send({ embeds: [embed] });
     },
 };
-
-// mia

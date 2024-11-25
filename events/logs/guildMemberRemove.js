@@ -1,50 +1,73 @@
-const { EmbedBuilder, time } = require('discord.js');
+const { EmbedBuilder, time, AuditLogEvent } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
+const GuildSetup = require('../../Schemas/guildSetup'); // Importar GuildSetup
+const messages = require('./messages/guildMemberRemove'); // Importar mensajes
 
 module.exports = {
     name: 'guildMemberRemove',
     async execute(client, member) {
+        if (!member.guild) return;
 
-        // Verificamos si el miembro pertenece a un servidor
-        if (!member.guild) {
-            return;
-        }
+        // Obtener configuración del servidor
+        const guildSetup = await GuildSetup.findOne({ guildId: member.guild.id });
+        if (!guildSetup || !guildSetup.isSetupComplete) return;
 
-        // Buscamos la configuración de logs para este servidor
+        const lang = guildSetup.language || 'en'; // Determinar idioma del servidor
+
+        // Obtener configuración de logs
         const logSettings = await LogSettings.findOne({ guildId: member.guild.id });
-        if (!logSettings) {
-            return;
+        if (!logSettings || !logSettings.memberLeaveEnabled || !logSettings.memberLeaveChannelId) return;
+
+        const logChannel = member.guild.channels.cache.get(logSettings.memberLeaveChannelId);
+        if (!logChannel) return;
+
+        let isBan = false; // Variable para rastrear si fue un baneo reciente
+        try {
+            const auditLogs = await member.guild.fetchAuditLogs({
+                type: AuditLogEvent.MemberBanAdd,
+                limit: 1,
+            });
+
+            const banLog = auditLogs.entries.find(entry => entry.target.id === member.user.id);
+
+            if (banLog) {
+                const timeSinceBan = Date.now() - banLog.createdTimestamp;
+
+                // Verificamos si el baneo fue en los últimos 10 segundos
+                if (timeSinceBan < 10000) {
+                    isBan = true;
+                    console.log(messages[lang].bannedRecently.replace('{userTag}', member.user.tag));
+                    return; // No enviamos el embed si fue un baneo reciente
+                }
+            }
+        } catch (error) {
+            console.error('Error al obtener registros de auditoría:', error);
         }
 
-        // Comprobamos si los logs de salida de miembros están habilitados y si se ha configurado un canal para estos logs
-        if (logSettings.memberLeaveEnabled && logSettings.memberLeaveChannelId) {
-            const logChannel = member.guild.channels.cache.get(logSettings.memberLeaveChannelId);
-            if (!logChannel) {
-                return;
-            }
+        // Si no fue un baneo reciente, procedemos a registrar la salida
+        if (!isBan) {
+            const userTag = member.user.tag || messages[lang].unknown;
+            const userId = member.user.id || messages[lang].unknown;
+            const memberSince = member.joinedTimestamp
+                ? time(new Date(member.joinedTimestamp))
+                : messages[lang].noJoinDate;
+            const totalMembers = member.guild.memberCount;
 
-            const nombre = member.user.tag
-            const userID = member.user.id
-            const date = new Date(member.joinedTimestamp);
-            const Time = time(date)
-
-            // Creamos un embed para mostrar el detalle del miembro que salió
+            // Crear embed multilenguaje
             const embed = new EmbedBuilder()
                 .setColor('#FF0000') // Rojo, para indicar que el miembro se ha ido
-                .setTitle('🔴 Miembro Salió')
-                .setDescription(`**${member.user.tag}** ha abandonado el servidor.`)
+                .setTitle(messages[lang].title)
+                .setDescription(messages[lang].description.replace('{userTag}', userTag))
                 .addFields(
-                    { name: `Usuario que ha salido:`, value: `\`\`\`${nombre}\`\`\`` || `\`\`\`Contenido no visible\`\`\`` },
-                    { name: `ID del usuario`,  value: `\`\`\`${userID}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
-                    { name: 'Miembro desde', value: Time, inline: true },
-                    { name: 'Miembros Totales', value: `${member.guild.memberCount}`, inline: true }
+                    { name: messages[lang].userLeft, value: `\`\`\`${userTag}\`\`\`` },
+                    { name: messages[lang].userId, value: `\`\`\`${userId}\`\`\`` },
+                    { name: messages[lang].memberSince, value: memberSince, inline: true },
+                    { name: messages[lang].totalMembers, value: `${totalMembers}`, inline: true }
                 )
                 .setTimestamp();
 
-            // Enviamos el embed al canal de logs
-            logChannel.send({ embeds: [embed] });
+            // Enviar embed al canal configurado
+            await logChannel.send({ embeds: [embed] });
         }
     },
 };
-
-// mia

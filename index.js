@@ -6,21 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const config = require("./config.json")
 const client = new Client({
-    partials: [
-      Partials.Message, 
-      Partials.Channel, 
-      Partials.GuildMember,
-      Partials.Reaction, 
-    ],
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildInvites, 
-      GatewayIntentBits.GuildMessages, 
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildMessageReactions,
-      GatewayIntentBits.MessageContent,
-    ],
-  });
+    intents: 53608447, // Intents configurados con el número dado
+});
 client.commands = new Collection();
 client.slashCommands = new Map();
 require('./handlers/commandHandler.js')(client);

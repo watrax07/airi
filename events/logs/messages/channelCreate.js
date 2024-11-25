@@ -1,0 +1,40 @@
+const messages = {
+    es: {
+        title: 'Canal Creado ✅',
+        description: 'El canal **{channelName}** fue creado. Detalles a continuación:',
+        channelName: 'Nombre del Canal',
+        channelId: 'ID del Canal',
+        createdBy: 'Creado por:',
+        channelTag: 'Canal',
+        createdAt: 'Hora',
+        unknown: 'Desconocido',
+        unnamed: 'Sin nombre',
+        unavailable: 'ID no disponible',
+    },
+    en: {
+        title: 'Channel Created ✅',
+        description: 'The channel **{channelName}** was created. Details below:',
+        channelName: 'Channel Name',
+        channelId: 'Channel ID',
+        createdBy: 'Created by:',
+        channelTag: 'Channel',
+        createdAt: 'Time',
+        unknown: 'Unknown',
+        unnamed: 'Unnamed',
+        unavailable: 'Unavailable',
+    },
+    fr: {
+        title: 'Canal Créé ✅',
+        description: 'Le canal **{channelName}** a été créé. Détails ci-dessous:',
+        channelName: 'Nom du Canal',
+        channelId: 'ID du Canal',
+        createdBy: 'Créé par:',
+        channelTag: 'Canal',
+        createdAt: 'Heure',
+        unknown: 'Inconnu',
+        unnamed: 'Sans nom',
+        unavailable: 'ID non disponible',
+    },
+};
+
+module.exports = messages;

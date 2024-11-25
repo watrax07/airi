@@ -1,56 +1,64 @@
 const { EmbedBuilder, time, AuditLogEvent, roleMention } = require('discord.js');
 const LogSettings = require('../../Schemas/LogSchema');
+const GuildSetup = require('../../Schemas/guildSetup'); // Importar GuildSetup
+const messages = require('./messages/roleCreate'); // Importar mensajes
+
 module.exports = {
     name: 'roleCreate',
     async execute(client, role) {
+        if (!role.guild) return;
 
-        if (!role.guild) {
-            return;
-        }
+        // Obtener configuración del servidor
+        const guildSetup = await GuildSetup.findOne({ guildId: role.guild.id });
+        if (!guildSetup || !guildSetup.isSetupComplete) return;
 
+        const lang = guildSetup.language || 'en'; // Determinar idioma del servidor
+
+        // Obtener configuración de logs
         const logSettings = await LogSettings.findOne({ guildId: role.guild.id });
-        if (!logSettings) {
-            return;
-        }
+        if (!logSettings || !logSettings.roleCreateEnabled || !logSettings.roleCreateChannelId) return;
 
-        if (logSettings.roleCreateEnabled && logSettings.roleCreateChannelId) {
-            const logChannel = role.guild.channels.cache.get(logSettings.roleCreateChannelId);
-            if (!logChannel) {
-                return;
-            }
+        const logChannel = role.guild.channels.cache.get(logSettings.roleCreateChannelId);
+        if (!logChannel) return;
 
+        // Obtener registros de auditoría
+        let executorTag = messages[lang].unknown;
+        try {
             const auditLogs = await role.guild.fetchAuditLogs({
-                type: AuditLogEvent.RoleCreate, 
-                limit: 1
-                
+                type: AuditLogEvent.RoleCreate,
+                limit: 1,
             });
-
-            const  createLog = auditLogs.entries.first();
-            const executor = createLog ? createLog.executor : null;
-            const executorTag = executor ? executor.tag : `Desconocido`;
-            const nombre = role.name
-            const idRole = role.id
-          const  date = new Date();
-          const Time = time(date)
-          const roleTag = roleMention(idRole)
-
-            const embed = new EmbedBuilder()
-                .setColor('#00ff00')
-                .setTitle('🎉 Nuevo Rol Creado')
-                .setDescription(`Un nuevo rol llamado **${role.name}** acaba de ser creado en el servidor.`)
-                .addFields(
-                    { name: 'Nombre del rol', value: `\`\`\`${nombre}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
-                    { name: `Id del rol`, value: `\`\`\`${idRole}\`\`\`` || `\`\`\`Contenido no visible\`\`\``},
-                    { name: `Creado por:`, value: executorTag, inline: true},
-                    { name: 'Color', value: role.color.toString(16), inline: true },
-                    { name: 'Mencionar Rol', value: roleTag, inline: true },
-                    { name: `Creado a las`, value: Time, inline: true}
-                )
-                .setTimestamp();
-
-            logChannel.send({ embeds: [embed] });
+            const createLog = auditLogs.entries.first();
+            if (createLog) {
+                executorTag = createLog.executor?.tag || messages[lang].unknown;
+            }
+        } catch (error) {
+            console.error('Error al obtener registros de auditoría:', error);
         }
+
+        // Datos del rol
+        const roleName = role.name || messages[lang].unknown;
+        const roleId = role.id || messages[lang].unknown;
+        const roleColor = `#${role.color.toString(16).padStart(6, '0')}`;
+        const roleTag = roleMention(roleId);
+        const Time = time(new Date());
+
+        // Crear embed multilenguaje
+        const embed = new EmbedBuilder()
+            .setColor(role.color)
+            .setTitle(messages[lang].title)
+            .setDescription(messages[lang].description.replace('{roleName}', roleName))
+            .addFields(
+                { name: messages[lang].roleName, value: `\`\`\`${roleName}\`\`\`` },
+                { name: messages[lang].roleId, value: `\`\`\`${roleId}\`\`\`` },
+                { name: messages[lang].createdBy, value: executorTag, inline: true },
+                { name: messages[lang].roleColor, value: roleColor, inline: true },
+                { name: messages[lang].roleMention, value: roleTag, inline: true },
+                { name: messages[lang].createdAt, value: Time, inline: true }
+            )
+            .setTimestamp();
+
+        // Enviar embed al canal configurado
+        logChannel.send({ embeds: [embed] });
     },
 };
-
-// mia
