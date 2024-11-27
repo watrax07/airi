@@ -19,22 +19,37 @@ module.exports = {
             welcomeSettings = new WelcomeSettings({ guildId });
             await welcomeSettings.save();
         }
+        const WelColor = welcomeSettings.color  || `No configurado `
+        const WelTitulo = welcomeSettings.tittle || `No configurado`
+        const WelDescripcion =  welcomeSettings.description || `No configurado`
+        const WelImage = welcomeSettings.image || `No configurado`
+        const Welfooter = welcomeSettings.footer || `No configurado`
+        const welcThumbnail = welcomeSettings.thumbnail || `No configurado`
+        const welChannel =  `<#${welcomeSettings.channelId || 'No configurado'}>`
+
 
         // Embed inicial con configuraciones actuales o mensaje de "Sin configuración"
-        const initialEmbed = new EmbedBuilder().setColor('#00ff00');
+        const initialEmbed = new EmbedBuilder().setColor('#c20aff');
+
+
 
         if (welcomeSettings) {
             initialEmbed
                 .setTitle('Configuración Actual de Bienvenidas')
                 .setDescription('Revisa la configuración existente o comienza una nueva.')
                 .addFields(
-                    { name: 'Canal', value: `<#${welcomeSettings.channelId || 'No configurado'}>` },
-                    { name: 'Título', value: welcomeSettings.title || 'No configurado', inline: true },
-                    { name: 'Descripción', value: welcomeSettings.description || 'No configurado', inline: true },
-                    { name: 'Color', value: welcomeSettings.color || 'No configurado', inline: true },
-                    { name: 'Thumbnail', value: welcomeSettings.thumbnail || 'No configurado', inline: true },
-                    { name: 'Imagen', value: welcomeSettings.image || 'No configurado', inline: true },
-                    { name: 'Footer', value: welcomeSettings.footer || 'No configurado', inline: true }
+                    { name: `Imagenes del embed:`, value: `\n 
+                        **Imagen Principal** : ${WelImage} \n-
+                        **Footer Puesta**: ${Welfooter} \n 
+                        **Thumbnail Puesta**: ${welcThumbnail}, \n
+                        -------------------------`},
+
+                    { name: `Configuracion principal:`, value: `\n
+                        **Titulo Asignado**: ${WelTitulo} \n
+                        **Descripcion Asignada**: ${WelDescripcion} \n
+                        **Canal Asignado**: ${welChannel} \n
+                        **Color asignado**: ${WelColor}`  }
+
                 );
         } else {
             initialEmbed
